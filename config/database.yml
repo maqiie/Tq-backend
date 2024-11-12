@@ -1,0 +1,28 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  database: tq_cahspoint_development
+  username: markpaul  # Replace this with your PostgreSQL username
+  password: markpaul  # Replace with your PostgreSQL password
+  host: localhost  # Add this if you're connecting to a local PostgreSQL instance
+  port: 5434  # Ensure the port is set correctly if you're using a non-default PostgreSQL port
+
+test:
+  <<: *default
+  database: tq_cahspoint_test
+  username: markpaul  # Replace this with your PostgreSQL username
+  password: markpaul  # Replace with your PostgreSQL password
+  host: localhost  # Add this if you're connecting to a local PostgreSQL instance
+  port: 5434  # Ensure the port is set correctly if you're using a non-default PostgreSQL port
+
+production:
+  <<: *default
+  database: tq_cahspoint_production
+  username: tq_cahspoint  # Or the username for your production PostgreSQL
+  password: <%= ENV["TQ_CAHSPOINT_DATABASE_PASSWORD"] %>  # Store this in an environment variable for security
+  host: <your_production_db_host>  # Provide your production database host (e.g., 'localhost' or an external DB host)
+  port: 5434 # Ensure the port is set correctly
