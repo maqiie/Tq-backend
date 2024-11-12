@@ -10,6 +10,8 @@ class User < ActiveRecord::Base
   include DeviseTokenAuth::Concerns::User
 
   before_create :generate_otp_secret, unless: :otp_secret?
+  has_many :agents
+  has_many :transactions, through: :agents
 
 
   # Add enum for role (admin and employee)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_05_09_015352) do
+ActiveRecord::Schema[7.0].define(version: 2024_11_12_092853) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -42,11 +42,58 @@ ActiveRecord::Schema[7.0].define(version: 2024_05_09_015352) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "agent_transactions", force: :cascade do |t|
+    t.bigint "agent_id", null: false
+    t.decimal "opening_balance"
+    t.decimal "closing_balance"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_id"], name: "index_agent_transactions_on_agent_id"
+  end
+
+  create_table "agents", force: :cascade do |t|
+    t.string "name"
+    t.string "type_of_agent"
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_agents_on_user_id"
+  end
+
+  create_table "commissions", force: :cascade do |t|
+    t.bigint "agent_id", null: false
+    t.decimal "amount"
+    t.integer "month"
+    t.integer "year"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_id"], name: "index_commissions_on_agent_id"
+  end
+
+  create_table "debtors", force: :cascade do |t|
+    t.string "name"
+    t.decimal "debt_amount"
+    t.bigint "agent_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_id"], name: "index_debtors_on_agent_id"
+  end
+
   create_table "posts", force: :cascade do |t|
     t.string "title"
     t.text "content"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "transactions", force: :cascade do |t|
+    t.bigint "agent_id", null: false
+    t.decimal "opening_balance"
+    t.decimal "closing_balance"
+    t.datetime "date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_id"], name: "index_transactions_on_agent_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -80,4 +127,9 @@ ActiveRecord::Schema[7.0].define(version: 2024_05_09_015352) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "agent_transactions", "agents"
+  add_foreign_key "agents", "users"
+  add_foreign_key "commissions", "agents"
+  add_foreign_key "debtors", "agents"
+  add_foreign_key "transactions", "agents"
 end

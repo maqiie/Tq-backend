@@ -58,7 +58,26 @@ class Auth::SessionsController < DeviseTokenAuth::SessionsController
     end
   end
   
-  
+  def employee_login
+    # Fetch the employee user from the database
+    user = User.find_by(email: params[:email])
+
+    # Check if the user exists, if the password is correct, and if the role is 'employee'
+    if user && user.valid_password?(params[:password]) && user.role == 'employee'
+      # Generate an auth token for the employee
+      token = user.create_new_auth_token
+
+      # Send the token in the response headers
+      response.headers.merge!(token)
+
+      # Respond with success
+      render json: { message: 'Employee logged in successfully!' }, status: :ok
+    else
+      # Return an error if the credentials are invalid or the user is not an employee
+      render json: { error: 'Invalid credentials or user is not an employee.' }, status: :unauthorized
+    end
+  end
+
   private
 
 
