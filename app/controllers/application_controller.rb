@@ -76,6 +76,16 @@ class ApplicationController < ActionController::Base
   def email_confirmed
     render plain: "Email confirmed successfully!"
   end
+  def authenticate_employee!
+    unless current_user&.employee?
+      render json: { error: 'You need to sign in as an employee before continuing.' }, status: :unauthorized
+    end
+  end
+  
+  def current_employee
+    # Return the user if their role is employee
+    current_user if current_user&.employee?
+  end
   
   protected
 
