@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_11_12_092853) do
+ActiveRecord::Schema[7.0].define(version: 2024_11_27_144305) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -76,6 +76,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_12_092853) do
     t.bigint "agent_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "total_paid", default: "0.0"
     t.index ["agent_id"], name: "index_debtors_on_agent_id"
   end
 
