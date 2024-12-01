@@ -86,7 +86,9 @@ class ApplicationController < ActionController::Base
     # Return the user if their role is employee
     current_user if current_user&.employee?
   end
-  
+  def authenticate_admin!
+    render json: { error: 'You must be an admin to perform this action.' }, status: :forbidden unless current_user&.admin?
+  end
   protected
 
   # Configure permitted parameters for Devise

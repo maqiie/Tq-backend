@@ -38,6 +38,9 @@ Rails.application.routes.draw do
       post 'transactions', to: 'agents#add_transaction', as: 'add_transaction'
     end
 
+    resources :agents do
+      resources :commissions, only: [:index, :create, :download]  # Added :index to the available actions
+    end
     # User management routes
     resources :users, only: [:index, :create, :destroy]
   end
