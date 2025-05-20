@@ -1,6 +1,6 @@
 module Admin
   class AgentsController < ApplicationController
-    before_action :authenticate_admin!
+    # before_action :authenticate_admin!
 
     # GET /admin/agents
     def index
@@ -36,9 +36,8 @@ module Admin
     private
 
     def agent_params
-      params.require(:agent).permit(:name, :type_of_agent)  # type_of_agent could be 'Bank' or 'Mobile Provider'
+      params.require(:agent).permit(:name, :type_of_agent, :email, :phone, :user_id)
     end
-
     def transaction_params
       params.require(:agent_transaction).permit(:closing_balance)  # opening_balance is set automatically
     end

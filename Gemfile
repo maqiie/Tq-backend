@@ -14,6 +14,8 @@ gem 'base32'
 gem 'topt'
 gem 'pg'
 
+gem 'groupdate'
+gem 'faker'
 
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"

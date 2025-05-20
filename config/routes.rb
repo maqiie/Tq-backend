@@ -38,17 +38,25 @@ Rails.application.routes.draw do
       post 'transactions', to: 'agents#add_transaction', as: 'add_transaction'
     end
 
+    get 'dashboard', to: 'dashboard#index'
+    
     resources :agents do
       resources :commissions, only: [:index, :create, :download]  # Added :index to the available actions
     end
+
     # User management routes
     resources :users, only: [:index, :create, :destroy]
+  end
+
+  # Add this route for creating an employee
+  namespace :admin do
+    post '/users/create_employee', to: 'users#create', as: 'create_employee'
   end
 
   # Employees namespace routes
   namespace :employees do
     # Agents CRUD routes
-    resources :agents, only: [:create] do
+    resources :agents, only: [:index, :create] do
       member do
         post 'create_transaction', to: 'agents#create_transaction'
       end
@@ -57,11 +65,15 @@ Rails.application.routes.draw do
     # Debt-related routes
     resources :debtors, only: [:create]  # Allows adding new debtors
     post 'debtors/:debtor_id/pay_debt', to: 'debtors#pay_debt'  # Route to mark debt as paid
-    
+
     # Commissions routes
     resources :commissions, only: [:create]  # Allows adding commissions
   end
-
+  
+  namespace :employees do
+    get 'debtors/overview', to: 'debtors#overview'
+  end
+  
   # Wrapping the OTP related routes inside devise_scope :user
   devise_scope :user do
     post '/auth/resend_otp', to: 'auth/sessions#resend_otp'  # Route to resend OTP
