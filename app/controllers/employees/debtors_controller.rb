@@ -1,34 +1,43 @@
-
-
 class Employees::DebtorsController < ApplicationController
   before_action :authenticate_employee!
 
   # Fetch all debtors (and debts) for the employee
   def index
-    @debtors = Debtor.all  # This will fetch all debtors, along with their debt details
+    @debtors = Debtor.all
 
     render json: { debtors: @debtors }, status: :ok
+  rescue StandardError => e
+    Rails.logger.error "Error in index: #{e.message}"
+    render json: { error: 'Failed to fetch debtors' }, status: :internal_server_error
   end
 
+  # Get overview of debtors for the current authenticated employee
   def overview
     @debtors = Debtor.all
-  
     total_debt = @debtors.sum(:debt_amount)
     total_paid = @debtors.sum(:total_paid)
-  
+
     debt_summary = @debtors.map do |debtor|
       {
+        id: debtor.id,
         debtor_name: debtor.name,
         debt_amount: debtor.debt_amount,
         total_paid: debtor.total_paid,
         balance_due: debtor.debt_amount - debtor.total_paid,
-        payment_status: debtor.debt_amount == 0 ? 'Paid Off' : 'Outstanding'
+        payment_status: debtor.debt_amount == debtor.total_paid ? 'Paid Off' : 'Outstanding'
       }
     end
-  
-    render json: { debt_summary: debt_summary, total_debt: total_debt, total_paid: total_paid }, status: :ok
+
+    render json: {
+      debt_summary: debt_summary,
+      total_debt: total_debt,
+      total_paid: total_paid
+    }, status: :ok
+  rescue StandardError => e
+    Rails.logger.error "Error in overview: #{e.message}"
+    render json: { error: 'Failed to generate debt overview' }, status: :internal_server_error
   end
-  
+
   # Create a new debtor (and their debt)
   def create
     @debtor = Debtor.new(debtor_params)
@@ -38,11 +47,14 @@ class Employees::DebtorsController < ApplicationController
     else
       render json: { errors: @debtor.errors.full_messages }, status: :unprocessable_entity
     end
+  rescue StandardError => e
+    Rails.logger.error "Error in create: #{e.message}"
+    render json: { error: 'Failed to create debtor' }, status: :internal_server_error
   end
 
   # Mark debt as paid (Partial or Full payment)
   def pay_debt
-    @debtor = Debtor.find(params[:debtor_id])
+    @debtor = Debtor.find_by(id: params[:debtor_id])
 
     if @debtor.nil?
       render json: { errors: 'Debtor not found' }, status: :not_found
@@ -72,17 +84,23 @@ class Employees::DebtorsController < ApplicationController
         render json: { errors: 'Failed to update debtor' }, status: :unprocessable_entity
       end
     end
+  rescue StandardError => e
+    Rails.logger.error "Error in pay_debt: #{e.message}"
+    render json: { error: 'Failed to process payment' }, status: :internal_server_error
   end
 
   # Show a specific debtor's debt details
   def show
-    @debtor = Debtor.find(params[:debtor_id])
+    @debtor = Debtor.find_by(id: params[:debtor_id])
 
     if @debtor
       render json: { debtor: @debtor }, status: :ok
     else
       render json: { errors: 'Debtor not found' }, status: :not_found
     end
+  rescue StandardError => e
+    Rails.logger.error "Error in show: #{e.message}"
+    render json: { error: 'Failed to fetch debtor details' }, status: :internal_server_error
   end
 
   private
