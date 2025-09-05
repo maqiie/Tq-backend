@@ -32,6 +32,112 @@ module Admin
         render json: { errors: @transaction.errors.full_messages }, status: :unprocessable_entity
       end
     end
+    def index
+      @agents = Agent.includes(:transactions).all
+      
+      # Include calculated balance and recent transactions
+      agents_with_data = @agents.map do |agent|
+        agent_data = agent.as_json
+        
+        # Calculate current balance from latest transaction
+        latest_transaction = agent.transactions.order(created_at: :desc).first
+        current_balance = latest_transaction&.closing_balance || 0
+        
+        # Get recent transactions (last 5)
+        recent_transactions = agent.transactions
+                                  .order(created_at: :desc)
+                                  .limit(5)
+                                  .map do |transaction|
+          {
+            id: transaction.id,
+            opening_balance: transaction.opening_balance,
+            closing_balance: transaction.closing_balance,
+            amount: (transaction.closing_balance.to_f - transaction.opening_balance.to_f),
+            date: transaction.date || transaction.created_at,
+            created_at: transaction.created_at
+          }
+        end
+        
+        agent_data.merge({
+          balance: current_balance,
+          transactions: recent_transactions,
+          total_transactions: agent.transactions.count
+        })
+      end
+      
+      render json: agents_with_data
+    end
+    
+    def show
+      @agent = Agent.includes(:transactions).find(params[:id])
+      
+      # Calculate current balance
+      latest_transaction = @agent.transactions.order(created_at: :desc).first
+      current_balance = latest_transaction&.closing_balance || 0
+      
+      # Get all transactions for this agent
+      all_transactions = @agent.transactions
+                              .order(created_at: :desc)
+                              .map do |transaction|
+        {
+          id: transaction.id,
+          opening_balance: transaction.opening_balance,
+          closing_balance: transaction.closing_balance,
+          amount: (transaction.closing_balance.to_f - transaction.opening_balance.to_f),
+          date: transaction.date || transaction.created_at,
+          created_at: transaction.created_at
+        }
+      end
+      
+      agent_data = @agent.as_json.merge({
+        balance: current_balance,
+        transactions: all_transactions,
+        total_transactions: @agent.transactions.count
+      })
+      
+      render json: agent_data
+    end
+    
+    def create
+      @agent = Agent.new(agent_params)
+      
+      if @agent.save
+        render json: @agent, status: :created
+      else
+        render json: { errors: @agent.errors }, status: :unprocessable_entity
+      end
+    end
+    
+    # New endpoint for agent transactions
+    def transactions
+      @agent = Agent.find(params[:id])
+      @transactions = @agent.transactions.order(created_at: :desc)
+      
+      transactions_data = @transactions.map do |transaction|
+        {
+          id: transaction.id,
+          opening_balance: transaction.opening_balance,
+          closing_balance: transaction.closing_balance,
+          amount: (transaction.closing_balance.to_f - transaction.opening_balance.to_f),
+          date: transaction.date || transaction.created_at,
+          created_at: transaction.created_at,
+          notes: transaction.notes
+        }
+      end
+      
+      render json: transactions_data
+    end
+    
+    def add_transaction
+      @agent = Agent.find(params[:agent_id])
+      @transaction = @agent.transactions.build(transaction_params)
+      
+      if @transaction.save
+        render json: @transaction, status: :created
+      else
+        render json: { errors: @transaction.errors }, status: :unprocessable_entity
+      end
+    end
 
     private
 

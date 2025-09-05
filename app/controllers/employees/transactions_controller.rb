@@ -67,10 +67,11 @@ end
       render json: { errors: ['Not authorized'] }, status: :forbidden
     end
   end
-
+  
   def transaction_params
-    params.require(:transaction).permit(:opening_balance, :closing_balance, :notes, :date)
+    params.require(:transaction).permit(:opening_balance, :closing_balance, :notes, :date, :agent_id)
   end
+  
 
   def parse_date(date_string)
     Date.parse(date_string) rescue nil
