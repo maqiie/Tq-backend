@@ -9,49 +9,75 @@ def index
   render json: transactions
 end
 
+ 
   def create
     transaction_date = parse_date(transaction_params[:date])
     unless transaction_date
       return render json: { errors: ["Invalid or missing date"] }, status: :unprocessable_entity
     end
-
+  
+    # Reject if a transaction already exists for this date
     if @employee.transactions.exists?(date: transaction_date)
       return render json: { errors: ["Transaction for this date already exists"] }, status: :unprocessable_entity
     end
-
-    last_transaction = @employee.transactions.order(date: :desc).first
-    yesterday_closing_balance = last_transaction&.closing_balance
-
-    if last_transaction && transaction_date <= last_transaction.date
-      return render json: { errors: ["Transaction date must be after the last transaction date"] }, status: :unprocessable_entity
+  
+    last_transaction_before = @employee.transactions
+                                      .where("date < ?", transaction_date)
+                                      .order(date: :desc)
+                                      .first
+  
+    expected_opening_balance = last_transaction_before&.closing_balance
+  
+    warnings = []
+    if expected_opening_balance && transaction_params[:opening_balance].to_f != expected_opening_balance.to_f
+      warnings << "Opening balance does not match the previous closing balance (expected #{expected_opening_balance})"
     end
-
-    if yesterday_closing_balance && transaction_params[:opening_balance].to_f != yesterday_closing_balance.to_f
-      return render json: { errors: ["Opening balance must match the closing balance from yesterday"] }, status: :unprocessable_entity
-    end
-
-    # Build the transaction, associate to the employee and set the creator to current_employee
+  
     @transaction = @employee.transactions.new(transaction_params)
-    @transaction.creator = current_employee  # <-- set creator here
-
+    @transaction.creator = current_employee
+  
     ActiveRecord::Base.transaction do
       if @transaction.save
-        render json: { message: 'Transaction created successfully', transaction: @transaction }, status: :created
+        render json: { 
+          message: 'Transaction created successfully',
+          transaction: @transaction,
+          warnings: warnings
+        }, status: :created
       else
         render json: { errors: @transaction.errors.full_messages }, status: :unprocessable_entity
         raise ActiveRecord::Rollback
       end
     end
   end
+  
+
+  # def latest
+  #   last_transaction = @employee.transactions.order(date: :desc).first
+  #   if last_transaction
+  #     render json: { closing_balance: last_transaction.closing_balance }
+  #   else
+  #     render json: { closing_balance: 0.0 }
+  #   end
+  # end
 
   def latest
     last_transaction = @employee.transactions.order(date: :desc).first
+  
     if last_transaction
-      render json: { closing_balance: last_transaction.closing_balance }
+      render json: {
+        id: last_transaction.id,
+        opening_balance: last_transaction.opening_balance,
+        closing_balance: last_transaction.closing_balance,
+        date: last_transaction.date,
+        notes: last_transaction.notes,
+        agent_id: last_transaction.agent_id
+      }
     else
-      render json: { closing_balance: 0.0 }
+      render json: { message: "No transactions found", closing_balance: 0.0 }
     end
   end
+  
+
 
   private
 

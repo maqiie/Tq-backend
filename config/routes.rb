@@ -79,6 +79,10 @@ Rails.application.routes.draw do
     # Agents
     resources :agents, only: [:index, :create] do
       post 'create_transaction', on: :member
+      get  'transactions/latest', on: :member
+      get  'transactions',        on: :member
+
+
     end
 
     # Debtors

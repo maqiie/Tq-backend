@@ -40,6 +40,31 @@ class Employees::AgentsController < ApplicationController
     end
   end
 
+  def transactions
+    @agent = current_employee.agents.find(params[:id])
+    @transactions = @agent.transactions.order(date: :desc)
+    render json: @transactions
+  end
+  
+  def latest
+    @agent = current_employee.agents.find(params[:id]) # Ensure agent belongs to logged-in employee
+    last_transaction = @agent.transactions.order(date: :desc).first
+  
+    if last_transaction
+      render json: {
+        id: last_transaction.id,
+        opening_balance: last_transaction.opening_balance,
+        closing_balance: last_transaction.closing_balance,
+        date: last_transaction.date,
+        notes: last_transaction.notes,
+        creator_id: last_transaction.creator_id
+      }
+    else
+      render json: { message: "No transactions found", closing_balance: 0.0 }
+    end
+  end
+  
+  
   private
 
   def agent_params
