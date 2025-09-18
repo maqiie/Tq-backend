@@ -1,0 +1,140 @@
+# app/views/admin/exports/full_report.xlsx.axlsx
+wb = xlsx_package.workbook
+
+# Header styles
+header_style = wb.styles.add_style(
+  bg_color: "366092",
+  fg_color: "FFFFFF",
+  b: true,
+  alignment: { horizontal: :center }
+)
+
+# Money format style
+currency_style = wb.styles.add_style(
+  format_code: "#,##0.00",
+  alignment: { horizontal: :right }
+)
+
+# Date style
+date_style = wb.styles.add_style(
+  format_code: "yyyy-mm-dd",
+  alignment: { horizontal: :center }
+)
+
+# --- Summary Sheet ---
+wb.add_worksheet(name: "Summary") do |sheet|
+  sheet.add_row ["Business Intelligence Report"], style: header_style
+  sheet.add_row []
+  sheet.add_row ["Report Period:", @start_date ? "#{@start_date.strftime('%Y-%m-%d')} to #{@end_date.strftime('%Y-%m-%d')}" : "All Time"]
+  sheet.add_row ["Generated On:", Date.current.strftime('%Y-%m-%d %H:%M')]
+  sheet.add_row []
+  
+  # Summary statistics
+  sheet.add_row ["Summary Statistics"], style: header_style
+  sheet.add_row ["Total Agents:", @agents.count]
+  sheet.add_row ["Total Transactions:", @transactions.count]
+  sheet.add_row ["Total Debtors:", @debtors.count]
+  sheet.add_row ["Total Commissions:", @commissions.count]
+  
+  if @transactions.any?
+    total_balance_change = @transactions.sum { |t| (t.closing_balance || 0) - (t.opening_balance || 0) }
+    sheet.add_row ["Total Balance Change:", total_balance_change], style: [nil, currency_style]
+  end
+  
+  if @commissions.any?
+    sheet.add_row ["Total Commission Amount:", @commissions.sum(:amount)], style: [nil, currency_style]
+  end
+  
+  if @debtors.any?
+    sheet.add_row ["Total Debt Amount:", @debtors.sum(:debt_amount)], style: [nil, currency_style]
+    sheet.add_row ["Total Paid Amount:", @debtors.sum(:total_paid)], style: [nil, currency_style]
+    sheet.add_row ["Outstanding Debt:", @debtors.sum(:debt_amount) - @debtors.sum(:total_paid)], style: [nil, currency_style]
+  end
+end
+
+# --- Agents Sheet ---
+wb.add_worksheet(name: "Agents") do |sheet|
+  sheet.add_row ["ID", "Name", "Type", "Email", "Phone", "User ID", "Created"], style: header_style
+  
+  @agents.each do |agent|
+    sheet.add_row [
+      agent.id,
+      agent.name,
+      agent.type_of_agent,
+      agent.email,
+      agent.phone,
+      agent.user_id,
+      agent.created_at
+    ], style: [nil, nil, nil, nil, nil, nil, date_style]
+  end
+  
+  # Auto-fit columns
+  sheet.column_widths 10, 25, 15, 30, 15, 10, 15
+end
+
+# --- Transactions Sheet ---
+wb.add_worksheet(name: "Transactions") do |sheet|
+  sheet.add_row ["ID", "Agent", "Opening Balance", "Closing Balance", "Balance Change", "Date", "Notes", "Created"], style: header_style
+  
+  @transactions.each do |t|
+    balance_change = (t.closing_balance || 0) - (t.opening_balance || 0)
+    
+    sheet.add_row [
+      t.id,
+      t.agent&.name || "Unknown Agent",
+      t.opening_balance,
+      t.closing_balance,
+      balance_change,
+      t.date,
+      t.notes,
+      t.created_at
+    ], style: [nil, nil, currency_style, currency_style, currency_style, date_style, nil, date_style]
+  end
+  
+  # Auto-fit columns
+  sheet.column_widths 10, 25, 15, 15, 15, 12, 30, 15
+end
+
+# --- Commissions Sheet ---
+wb.add_worksheet(name: "Commissions") do |sheet|
+  sheet.add_row ["ID", "Agent", "Amount", "Month", "Year", "Period", "Created"], style: header_style
+  
+  @commissions.each do |c|
+    period = "#{Date::MONTHNAMES[c.month]} #{c.year}"
+    
+    sheet.add_row [
+      c.id,
+      c.agent&.name || "Unknown Agent",
+      c.amount,
+      c.month,
+      c.year,
+      period,
+      c.created_at
+    ], style: [nil, nil, currency_style, nil, nil, nil, date_style]
+  end
+  
+  # Auto-fit columns
+  sheet.column_widths 10, 25, 15, 10, 10, 15, 15
+end
+
+# --- Debtors Sheet ---
+wb.add_worksheet(name: "Debtors") do |sheet|
+  sheet.add_row ["ID", "Name", "Debt Amount", "Total Paid", "Outstanding", "Agent", "Created"], style: header_style
+  
+  @debtors.each do |d|
+    outstanding = (d.debt_amount || 0) - (d.total_paid || 0)
+    
+    sheet.add_row [
+      d.id,
+      d.name,
+      d.debt_amount,
+      d.total_paid,
+      outstanding,
+      d.agent&.name || "Unknown Agent",
+      d.created_at
+    ], style: [nil, nil, currency_style, currency_style, currency_style, nil, date_style]
+  end
+  
+  # Auto-fit columns
+  sheet.column_widths 10, 25, 15, 15, 15, 25, 15
+end

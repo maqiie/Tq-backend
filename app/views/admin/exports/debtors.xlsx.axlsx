@@ -1,0 +1,93 @@
+# app/views/admin/exports/debtors.xlsx.axlsx
+wb = xlsx_package.workbook
+
+# Styles
+header_style = wb.styles.add_style(
+  bg_color: "366092",
+  fg_color: "FFFFFF",
+  b: true,
+  alignment: { horizontal: :center }
+)
+
+currency_style = wb.styles.add_style(
+  format_code: "#,##0.00",
+  alignment: { horizontal: :right }
+)
+
+outstanding_style = wb.styles.add_style(
+  format_code: "#,##0.00",
+  alignment: { horizontal: :right },
+  fg_color: "FF0000"
+)
+
+paid_style = wb.styles.add_style(
+  format_code: "#,##0.00",
+  alignment: { horizontal: :right },
+  fg_color: "008000"
+)
+
+date_style = wb.styles.add_style(
+  format_code: "yyyy-mm-dd",
+  alignment: { horizontal: :center }
+)
+
+wb.add_worksheet(name: "Debtors") do |sheet|
+  # Add title and summary
+  sheet.add_row ["Debtors Report"], style: header_style
+  sheet.add_row []
+  sheet.add_row ["Total Debtors:", @debtors.count]
+  
+  if @debtors.any?
+    total_debt = @debtors.sum(:debt_amount)
+    total_paid = @debtors.sum(:total_paid)
+    outstanding = total_debt - total_paid
+    fully_paid_count = @debtors.select { |d| (d.debt_amount || 0) <= (d.total_paid || 0) }.count
+    
+    sheet.add_row ["Total Debt Amount:", total_debt], style: [nil, currency_style]
+    sheet.add_row ["Total Paid Amount:", total_paid], style: [nil, paid_style]
+    sheet.add_row ["Outstanding Amount:", outstanding], style: [nil, outstanding_style]
+    sheet.add_row ["Fully Paid Debtors:", fully_paid_count]
+    sheet.add_row ["Payment Rate:", "#{((total_paid / total_debt) * 100).round(2)}%"] if total_debt > 0
+  end
+  
+  sheet.add_row []
+  sheet.add_row []
+  
+  # Headers
+  sheet.add_row [
+    "ID", 
+    "Name", 
+    "Debt Amount", 
+    "Total Paid", 
+    "Outstanding", 
+    "Payment %",
+    "Agent", 
+    "Status",
+    "Created At"
+  ], style: header_style
+  
+  @debtors.each do |d|
+    debt_amount = d.debt_amount || 0
+    total_paid = d.total_paid || 0
+    outstanding = debt_amount - total_paid
+    payment_percentage = debt_amount > 0 ? ((total_paid / debt_amount) * 100).round(2) : 0
+    status = outstanding <= 0 ? "Paid" : "Outstanding"
+    
+    outstanding_cell_style = outstanding > 0 ? outstanding_style : paid_style
+    
+    sheet.add_row [
+      d.id,
+      d.name,
+      debt_amount,
+      total_paid,
+      outstanding,
+      "#{payment_percentage}%",
+      d.agent&.name || "Unknown Agent",
+      status,
+      d.created_at
+    ], style: [nil, nil, currency_style, paid_style, outstanding_cell_style, nil, nil, nil, date_style]
+  end
+  
+  # Auto-fit columns
+  sheet.column_widths 8, 25, 15, 15, 15, 12, 25, 12, 18
+end

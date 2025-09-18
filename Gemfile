@@ -9,6 +9,7 @@ gem "jsonapi-serializer"
 gem 'cancancan'
 gem 'devise-two-factor'
 gem 'rotp'
+gem 'axlsx_rails'
 
 gem 'base32'
 gem 'topt'

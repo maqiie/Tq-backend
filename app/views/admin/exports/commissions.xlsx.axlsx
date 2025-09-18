@@ -1,0 +1,83 @@
+# app/views/admin/exports/commissions.xlsx.axlsx
+wb = xlsx_package.workbook
+
+# Styles
+header_style = wb.styles.add_style(
+  bg_color: "366092",
+  fg_color: "FFFFFF",
+  b: true,
+  alignment: { horizontal: :center }
+)
+
+currency_style = wb.styles.add_style(
+  format_code: "#,##0.00",
+  alignment: { horizontal: :right }
+)
+
+date_style = wb.styles.add_style(
+  format_code: "yyyy-mm-dd",
+  alignment: { horizontal: :center }
+)
+
+wb.add_worksheet(name: "Commissions") do |sheet|
+  # Add title and summary
+  sheet.add_row ["Commissions Report"], style: header_style
+  sheet.add_row []
+  sheet.add_row ["Total Commission Records:", @commissions.count]
+  
+  if @commissions.any?
+    total_commissions = @commissions.sum(:amount)
+    average_commission = (total_commissions / @commissions.count).round(2)
+    unique_agents = @commissions.joins(:agent).distinct.count('agents.id')
+    
+    sheet.add_row ["Total Commission Amount:", total_commissions], style: [nil, currency_style]
+    sheet.add_row ["Average Commission:", average_commission], style: [nil, currency_style]
+    sheet.add_row ["Agents with Commissions:", unique_agents]
+    
+    # Top performing agents
+    top_agents = @commissions.joins(:agent)
+                            .group('agents.name')
+                            .sum(:amount)
+                            .sort_by { |_, amount| -amount }
+                            .first(3)
+    
+    if top_agents.any?
+      sheet.add_row []
+      sheet.add_row ["Top Performers:"]
+      top_agents.each_with_index do |(agent_name, amount), index|
+        sheet.add_row ["#{index + 1}. #{agent_name}:", amount], style: [nil, currency_style]
+      end
+    end
+  end
+  
+  sheet.add_row []
+  sheet.add_row []
+  
+  # Headers
+  sheet.add_row [
+    "ID", 
+    "Agent", 
+    "Amount", 
+    "Month", 
+    "Year", 
+    "Period",
+    "Created At"
+  ], style: header_style
+  
+  @commissions.each do |c|
+    period = "#{Date::MONTHNAMES[c.month]} #{c.year}" if c.month && c.year
+    
+    sheet.add_row [
+      c.id,
+      c.agent&.name || "Unknown Agent",
+      c.amount,
+      c.month,
+      c.year,
+      period,
+      c.created_at
+    ], style: [nil, nil, currency_style, nil, nil, nil, date_style]
+  end
+  
+  # Auto-fit columns
+  sheet.column_widths 8, 25, 15, 8, 8, 15, 18
+end

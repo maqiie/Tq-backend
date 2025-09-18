@@ -66,10 +66,18 @@ GEM
       i18n (>= 1.6, < 2)
       minitest (>= 5.1)
       tzinfo (~> 2.0)
+    axlsx_rails (0.6.1)
+      actionpack (>= 3.1)
+      caxlsx (>= 3.0)
     base32 (0.3.4)
     bcrypt (3.1.19)
     builder (3.2.4)
     cancancan (3.5.0)
+    caxlsx (4.4.0)
+      htmlentities (~> 4.3, >= 4.3.4)
+      marcel (~> 1.0)
+      nokogiri (~> 1.10, >= 1.10.4)
+      rubyzip (>= 2.4, < 4)
     concurrent-ruby (1.2.2)
     crass (1.0.6)
     date (3.3.3)
@@ -98,6 +106,7 @@ GEM
       activesupport (>= 5.0)
     groupdate (6.5.1)
       activesupport (>= 7)
+    htmlentities (4.3.4)
     i18n (1.14.1)
       concurrent-ruby (~> 1.0)
     io-console (0.6.0)
@@ -174,6 +183,7 @@ GEM
       actionpack (>= 5.2)
       railties (>= 5.2)
     rotp (6.3.0)
+    rubyzip (3.1.0)
     sprockets (4.2.0)
       concurrent-ruby (~> 1.0)
       rack (>= 2.2.4, < 4)
@@ -198,6 +208,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  axlsx_rails
   base32
   cancancan
   debug

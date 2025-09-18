@@ -1,0 +1,61 @@
+# app/views/admin/exports/agents.xlsx.axlsx
+wb = xlsx_package.workbook
+
+# Styles
+header_style = wb.styles.add_style(
+  bg_color: "366092",
+  fg_color: "FFFFFF",
+  b: true,
+  alignment: { horizontal: :center }
+)
+
+date_style = wb.styles.add_style(
+  format_code: "yyyy-mm-dd",
+  alignment: { horizontal: :center }
+)
+
+wb.add_worksheet(name: "Agents") do |sheet|
+  # Add title and summary
+  sheet.add_row ["Agents Report"], style: header_style
+  sheet.add_row []
+  sheet.add_row ["Total Agents:", @agents.count]
+  
+  # Agent type breakdown
+  agent_types = @agents.group(:type_of_agent).count
+  agent_types.each do |type, count|
+    sheet.add_row ["#{type&.humanize || 'Unknown'} Agents:", count]
+  end
+  
+  sheet.add_row []
+  sheet.add_row []
+  
+  # Headers
+  sheet.add_row [
+    "ID", 
+    "Name", 
+    "Type", 
+    "Email", 
+    "Phone", 
+    "User ID",
+    "Status",
+    "Created At"
+  ], style: header_style
+  
+  @agents.each do |agent|
+    status = agent.user&.confirmed_at ? "Active" : "Pending"
+    
+    sheet.add_row [
+      agent.id,
+      agent.name,
+      agent.type_of_agent&.humanize,
+      agent.email,
+      agent.phone,
+      agent.user_id,
+      status,
+      agent.created_at
+    ], style: [nil, nil, nil, nil, nil, nil, nil, date_style]
+  end
+  
+  # Auto-fit columns
+  sheet.column_widths 8, 25, 15, 30, 15, 10, 12, 18
+end

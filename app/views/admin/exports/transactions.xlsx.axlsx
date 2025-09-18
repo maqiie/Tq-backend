@@ -1,0 +1,79 @@
+# app/views/admin/exports/transactions.xlsx.axlsx
+wb = xlsx_package.workbook
+
+# Styles
+header_style = wb.styles.add_style(
+  bg_color: "366092",
+  fg_color: "FFFFFF",
+  b: true,
+  alignment: { horizontal: :center }
+)
+
+currency_style = wb.styles.add_style(
+  format_code: "#,##0.00",
+  alignment: { horizontal: :right }
+)
+
+date_style = wb.styles.add_style(
+  format_code: "yyyy-mm-dd",
+  alignment: { horizontal: :center }
+)
+
+positive_change_style = wb.styles.add_style(
+  format_code: "#,##0.00",
+  alignment: { horizontal: :right },
+  fg_color: "008000"
+)
+
+negative_change_style = wb.styles.add_style(
+  format_code: "#,##0.00",
+  alignment: { horizontal: :right },
+  fg_color: "FF0000"
+)
+
+wb.add_worksheet(name: "Transactions") do |sheet|
+  # Add title and summary
+  sheet.add_row ["Transaction Report"], style: header_style
+  sheet.add_row []
+  sheet.add_row ["Total Transactions:", @transactions.count]
+  
+  if @transactions.any?
+    total_balance_change = @transactions.sum { |t| (t.closing_balance || 0) - (t.opening_balance || 0) }
+    sheet.add_row ["Total Balance Change:", total_balance_change], style: [nil, currency_style]
+    sheet.add_row ["Average Transaction:", (total_balance_change / @transactions.count).round(2)], style: [nil, currency_style]
+  end
+  
+  sheet.add_row []
+  sheet.add_row []
+  
+  # Headers
+  sheet.add_row [
+    "ID", 
+    "Agent", 
+    "Opening Balance", 
+    "Closing Balance", 
+    "Balance Change", 
+    "Transaction Date", 
+    "Notes", 
+    "Created At"
+  ], style: header_style
+  
+  @transactions.each do |t|
+    balance_change = (t.closing_balance || 0) - (t.opening_balance || 0)
+    change_style = balance_change >= 0 ? positive_change_style : negative_change_style
+    
+    sheet.add_row [
+      t.id,
+      t.agent&.name || "Unknown Agent",
+      t.opening_balance,
+      t.closing_balance,
+      balance_change,
+      t.date,
+      t.notes,
+      t.created_at
+    ], style: [nil, nil, currency_style, currency_style, change_style, date_style, nil, date_style]
+  end
+  
+  # Auto-fit columns
+  sheet.column_widths 8, 25, 15, 15, 15, 12, 40, 18
+end
