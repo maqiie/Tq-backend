@@ -9,7 +9,7 @@ Rails.application.configure do
 
 
 
-  config.active_storage.service = :local
+  config.active_storage.service = :tigris
 
   # Eager load code on boot. This eager loads most of Rails and
   # your application in memory, allowing both threaded web servers
@@ -41,7 +41,9 @@ Rails.application.configure do
     authentication:       'plain',
     enable_starttls_auto: true
   }
-  config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }
+  # config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }
+# config/environments/production.rb
+config.action_mailer.default_url_options = { host: 'tq-backend-main.fly.dev', protocol: 'https' }
 
   # Do not fallback to assets pipeline if a precompiled asset is missed.
   config.assets.compile = false
