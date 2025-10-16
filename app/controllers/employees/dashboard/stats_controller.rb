@@ -37,8 +37,16 @@ class Employees::Dashboard::StatsController < ApplicationController
     @current_employee ||= current_user
   end
 
+  # def employee_agents
+  #   @employee_agents ||= current_employee.agents
+  # end
+
   def employee_agents
-    @employee_agents ||= current_employee.agents
+    @employee_agents ||= if current_user.role == 'employee'
+      # Employees see ALL agents from ALL admins
+      admin_ids = User.where(role: 'admin').pluck(:id)
+      Agent.where(user_id: admin_ids)
+    end
   end
 
   def agent_ids
@@ -268,10 +276,10 @@ class Employees::Dashboard::StatsController < ApplicationController
 
   def agents_summary
     agents_data = employee_agents.includes(:agent_transactions, :commissions, :debtors).map do |agent|
-      # Latest transaction created by employee for this agent
-      latest_employee_transaction = employee_transactions.where(agent: agent).order(date: :desc).first
+      # Get the LATEST transaction for this agent (created by ANYONE)
+      latest_transaction = Transaction.where(agent: agent).order(date: :desc).first
       
-      # Latest self-update by agent
+      # Latest self-update by agent (fallback)
       latest_agent_transaction = agent.agent_transactions.order(created_at: :desc).first
       
       total_commissions = agent.commissions.sum(:amount)
@@ -282,15 +290,15 @@ class Employees::Dashboard::StatsController < ApplicationController
         id: agent.id,
         name: agent.name,
         type: agent.type_of_agent || 'Service Provider',
-        latest_balance: latest_employee_transaction&.closing_balance&.to_f || latest_agent_transaction&.closing_balance&.to_f || 0.0,
-        last_transaction_date: latest_employee_transaction&.date || latest_agent_transaction&.created_at&.to_date,
+        latest_balance: latest_transaction&.closing_balance&.to_f || latest_agent_transaction&.closing_balance&.to_f || 0.0,
+        last_transaction_date: latest_transaction&.date || latest_agent_transaction&.created_at&.to_date,
         total_commissions: total_commissions.to_f,
         active_debtors: active_debtors,
         total_debt_managed: total_debt.to_f,
-        status: latest_employee_transaction&.date == Date.current ? 'updated_today' : 'needs_update'
+        status: latest_transaction&.date == Date.current ? 'updated_today' : 'needs_update'
       }
     end
-
+  
     {
       agents: agents_data,
       summary: {
