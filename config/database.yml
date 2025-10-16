@@ -21,8 +21,4 @@ test:
 
 production:
   <<: *default
-  database: tq_cahspoint_production
-  username: tq_cahspoint  # Or the username for your production PostgreSQL
-  password: <%= ENV["TQ_CAHSPOINT_DATABASE_PASSWORD"] %>  # Store this in an environment variable for security
-  host: <your_production_db_host>  # Provide your production database host (e.g., 'localhost' or an external DB host)
-  port: 5432 # Ensure the port is set correctly
+  url: <%= ENV['DATABASE_URL'] %>
