@@ -40,23 +40,28 @@ class Employees::DebtorsController < ApplicationController
     render json: { error: 'Failed to generate debt overview' }, status: :internal_server_error
   end
   
-  # Create a new debtor
-  def create
-    # Make sure the agent belongs to accessible agents
-    @agent = current_user.accessible_agents.find_by(id: debtor_params[:agent_id])  # ← FIXED
-    return render json: { errors: 'Agent not found or not accessible' }, status: :not_found unless @agent
-    
-    @debtor = @agent.debtors.new(debtor_params.except(:agent_id))  # ← FIXED
-    
-    if @debtor.save
-      render json: { message: 'Debtor created successfully', debtor: @debtor }, status: :created
-    else
-      render json: { errors: @debtor.errors.full_messages }, status: :unprocessable_entity
-    end
-  rescue StandardError => e
-    Rails.logger.error "Error in create: #{e.message}"
-    render json: { error: 'Failed to create debtor' }, status: :internal_server_error
+# Create a new debtor
+def create
+  # Make sure the agent belongs to accessible agents
+  agent_id = debtor_params[:agent_id]
+  @agent = current_user.accessible_agents.find_by(id: agent_id)
+  
+  unless @agent
+    Rails.logger.error "Agent #{agent_id} not accessible to user #{current_user.id}"
+    return render json: { errors: 'Agent not found or not accessible' }, status: :not_found
   end
+  
+  @debtor = Debtor.new(debtor_params)
+  
+  if @debtor.save
+    render json: { message: 'Debtor created successfully', debtor: @debtor }, status: :created
+  else
+    render json: { errors: @debtor.errors.full_messages }, status: :unprocessable_entity
+  end
+rescue StandardError => e
+  Rails.logger.error "Error in create: #{e.message}"
+  render json: { error: 'Failed to create debtor' }, status: :internal_server_error
+end
   
   # Mark debt as paid
   def pay_debt
