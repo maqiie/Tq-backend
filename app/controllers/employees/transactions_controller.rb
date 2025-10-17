@@ -51,15 +51,7 @@ end
   end
   
 
-  # def latest
-  #   last_transaction = @employee.transactions.order(date: :desc).first
-  #   if last_transaction
-  #     render json: { closing_balance: last_transaction.closing_balance }
-  #   else
-  #     render json: { closing_balance: 0.0 }
-  #   end
-  # end
-
+ 
   def latest
     last_transaction = @employee.transactions.order(date: :desc).first
   

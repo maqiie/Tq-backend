@@ -42,11 +42,7 @@ class Employees::Dashboard::StatsController < ApplicationController
   # end
 
   def employee_agents
-    @employee_agents ||= if current_user.role == 'employee'
-      # Employees see ALL agents from ALL admins
-      admin_ids = User.where(role: 'admin').pluck(:id)
-      Agent.where(user_id: admin_ids)
-    end
+    @employee_agents ||= current_user.accessible_agents
   end
 
   def agent_ids

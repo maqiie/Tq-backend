@@ -4,7 +4,7 @@ module Admin
 
     # GET /admin/agents
     def index
-      @agents = Agent.includes(:transactions).all
+      @agents = current_user.accessible_agents.includes(:transactions)
       
       # Include calculated balance and recent transactions
       agents_with_data = @agents.map do |agent|
@@ -41,7 +41,7 @@ module Admin
     
     # GET /admin/agents/:id
     def show
-      @agent = Agent.includes(:transactions).find(params[:id])
+      @agent = current_user.accessible_agents.includes(:transactions).find(params[:id])
       
       # Calculate current balance
       latest_transaction = @agent.transactions.order(created_at: :desc).first
@@ -82,9 +82,31 @@ module Admin
       end
     end
     
+    # PATCH/PUT /admin/agents/:id
+    def update
+      @agent = current_user.accessible_agents.find(params[:id])
+      
+      if @agent.update(agent_params)
+        render json: { message: 'Agent updated successfully', agent: @agent }, status: :ok
+      else
+        render json: { errors: @agent.errors.full_messages }, status: :unprocessable_entity
+      end
+    end
+    
+    # DELETE /admin/agents/:id
+    def destroy
+      @agent = current_user.accessible_agents.find(params[:id])
+      
+      if @agent.destroy
+        render json: { message: 'Agent deleted successfully' }, status: :ok
+      else
+        render json: { errors: @agent.errors.full_messages }, status: :unprocessable_entity
+      end
+    end
+    
     # GET /admin/agents/:id/transactions
     def transactions
-      @agent = Agent.find(params[:id])
+      @agent = current_user.accessible_agents.find(params[:id])
       @transactions = @agent.transactions.order(created_at: :desc)
       
       transactions_data = @transactions.map do |transaction|
@@ -104,7 +126,7 @@ module Admin
 
     # POST /admin/agents/:agent_id/transactions
     def add_transaction
-      @agent = Agent.find(params[:agent_id])
+      @agent = current_user.accessible_agents.find(params[:agent_id])
       @transaction = @agent.transactions.build(transaction_params)
 
       if @transaction.save
